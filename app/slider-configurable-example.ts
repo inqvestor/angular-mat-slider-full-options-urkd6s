@@ -65,10 +65,9 @@ export class SliderConfigurableExample implements OnInit {
     const maxDate = uniqueDateArr.reduce(function (a, b) {
       return a > b ? a : b;
     });
-    const minDate = Array.from(dataSet).reduce(function (a, b) {
+    const minDate = uniqueDateArr.reduce(function (a, b) {
       return a < b ? a : b;
     });
-
     this.sampleDates$ = from(dataSet);
     this.scope.minDate = minDate;
     this.scope.maxDate = maxDate;
@@ -79,7 +78,6 @@ export class SliderConfigurableExample implements OnInit {
     );
     this.value = this.max = this.scope.sliderRange;
     this.filterData(this.scope.selectedDate);
-
     console.log(maxDate, minDate);
   }
 
@@ -109,38 +107,27 @@ export class SliderConfigurableExample implements OnInit {
         if (dt) this.sampleDates.push(dt);
       });
   }
-
   sliderDate(sliderValue: number, sliderMax: number) {
     const updatedDate = new Date(this.scope.minDate);
     return this.getFormattedDate(
       updatedDate.setTime(updatedDate.getTime() + sliderValue * 86400 * 1000)
     );
-    // return this.getFormattedDate(
-    //   sliderValue === sliderMax
-    //     ? updatedDate.setTime(
-    //         updatedDate.getTime() + sliderValue * 86400 * 1000 - 86400 * 1000
-    //       )
-    //     : updatedDate.setTime(
-    //         updatedDate.getTime() + sliderValue * 86400 * 1000
-    //       )
-    // );
+  }
+  formatLabel(value: number) {
+    const lbl = this.sliderDate(value, this.max);
+    return new DatePipe('en-US').transform(lbl, 'shortDate');
   }
 
+  //Util Functions
   getFormattedDate(stDate: number) {
     var sDate = new Date(stDate);
     return sDate;
   }
-
   dayDiff(firstDate: Date, secondDate: Date) {
     var minDate = new Date(firstDate);
     var maxDate = new Date(secondDate);
     var timeDiff = Math.abs(maxDate.getTime() - minDate.getTime());
     var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
     return diffDays;
-  }
-
-  formatLabel(value: number) {
-    const lbl = this.sliderDate(value, this.max);
-    return new DatePipe('en-US').transform(lbl, 'shortDate');
   }
 }
