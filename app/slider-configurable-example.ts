@@ -3,23 +3,45 @@ import { DatePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { OnInit } from '@angular/core/src/metadata';
 import { MatSliderChange } from '@angular/material';
+import { Observable, from } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 
 interface DateSlider {
-  minDate?: string;
-  maxDate?: string;
+  minDate?: Date;
+  maxDate?: Date;
   selectedDate?: Date;
   sliderRange?: number;
 }
 
-/**
- * @title Configurable slider
- */
 @Component({
   selector: 'slider-configurable-example',
   templateUrl: 'slider-configurable-example.html',
   styleUrls: ['slider-configurable-example.css'],
 })
 export class SliderConfigurableExample implements OnInit {
+  testData = [
+    '1/14/2016',
+    '1/31/2016',
+    '2/6/2016',
+    '2/1/2016',
+    '5/2/2016',
+    '4/18/2016',
+    '4/28/2016',
+    '8/29/2016',
+    '9/24/2016',
+    '11/8/2016',
+    '10/11/2016',
+    '5/3/2016',
+    '6/2/2016',
+    '7/13/2016',
+    '8/6/2016',
+    '10/31/2016',
+    '1/4/2017',
+    '1/31/2017',
+  ];
+  sampleDates = [];
+  sampleDates$: Observable<Date>;
+
   autoTicks = true;
   disabled = false;
   invert = false;
@@ -31,25 +53,34 @@ export class SliderConfigurableExample implements OnInit {
   value = 100;
   vertical = false;
   scope: DateSlider = {};
-  minDate = '01/14/2016 12:00';
+
   constructor() {
     this.formatLabel = this.formatLabel.bind(this);
   }
 
   ngOnInit(): void {
-    this.scope.minDate = '01/14/2016 12:00';
-    this.scope.maxDate = '01/31/2017 15:30';
+    const dataSet = new Set<Date>();
+    this.testData.forEach((dtStr) => dataSet.add(new Date(dtStr)));
+    const uniqueDateArr = Array.from(dataSet);
+    const maxDate = uniqueDateArr.reduce(function (a, b) {
+      return a > b ? a : b;
+    });
+    const minDate = Array.from(dataSet).reduce(function (a, b) {
+      return a < b ? a : b;
+    });
 
+    this.sampleDates$ = from(dataSet);
+    this.scope.minDate = minDate;
+    this.scope.maxDate = maxDate;
     this.scope.selectedDate = new Date(this.scope.maxDate);
-
     this.scope.sliderRange = this.dayDiff(
       this.scope.minDate,
       this.scope.maxDate
-    ); //This will give you range between start and end dates
-
+    );
     this.value = this.max = this.scope.sliderRange;
+    this.filterData(this.scope.selectedDate);
 
-    // console.log(this.scope);
+    console.log(maxDate, minDate);
   }
 
   get tickInterval(): number | 'auto' {
@@ -61,21 +92,38 @@ export class SliderConfigurableExample implements OnInit {
   private _tickInterval = 1;
 
   onSliderChange(event: MatSliderChange) {
-    console.log(event.value, this.value, this.max);
+    //   console.log(event.value, this.value, this.max);
     this.scope.selectedDate = this.sliderDate(event.value, this.max);
+    this.filterData(this.scope.selectedDate);
+  }
+
+  filterData(maxBoundDate: Date) {
+    this.sampleDates = [];
+    this.sampleDates$
+      .pipe(
+        map((dtStr) => new Date(dtStr)),
+        filter((dt) => dt <= maxBoundDate)
+      )
+      .subscribe((dt) => {
+        // console.log(dt);
+        if (dt) this.sampleDates.push(dt);
+      });
   }
 
   sliderDate(sliderValue: number, sliderMax: number) {
     const updatedDate = new Date(this.scope.minDate);
     return this.getFormattedDate(
-      sliderValue === sliderMax
-        ? updatedDate.setTime(
-            updatedDate.getTime() + sliderValue * 86400 * 1000 - 86400 * 1000
-          )
-        : updatedDate.setTime(
-            updatedDate.getTime() + sliderValue * 86400 * 1000
-          )
+      updatedDate.setTime(updatedDate.getTime() + sliderValue * 86400 * 1000)
     );
+    // return this.getFormattedDate(
+    //   sliderValue === sliderMax
+    //     ? updatedDate.setTime(
+    //         updatedDate.getTime() + sliderValue * 86400 * 1000 - 86400 * 1000
+    //       )
+    //     : updatedDate.setTime(
+    //         updatedDate.getTime() + sliderValue * 86400 * 1000
+    //       )
+    // );
   }
 
   getFormattedDate(stDate: number) {
@@ -83,7 +131,7 @@ export class SliderConfigurableExample implements OnInit {
     return sDate;
   }
 
-  dayDiff(firstDate: string, secondDate: string) {
+  dayDiff(firstDate: Date, secondDate: Date) {
     var minDate = new Date(firstDate);
     var maxDate = new Date(secondDate);
     var timeDiff = Math.abs(maxDate.getTime() - minDate.getTime());
